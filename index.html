@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV to Anything</title>
+<meta name="description" content="Convert CSV or TSV to JSON, SQL inserts, Markdown table, or TypeScript types. Browser-only, no upload.">
+<meta name="ai.description" content="Single-file HTML tool that converts CSV/TSV input into multiple output formats: JSON array, SQL INSERT statements, Markdown tables, and TypeScript interface definitions. The tool parses CSV with quote handling, infers column types, and renders output in real time. No network calls, all in-browser.">
+<style>
+:root{--bg:#eef0ec;--surface:#fff;--surface-2:#f5f7f3;--ink:#0e1a14;--ink-soft:#5a6a60;--rule:#cdd5cf;--rule-strong:#0e1a14;--accent:#0d6e4f;--accent-soft:#d4ece1;--mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;--sans:"Inter",ui-sans-serif,system-ui,-apple-system,sans-serif;--ok:#1f6f43;--ok-soft:#e3f2ea;--err:#b3261e;--err-soft:#fbe9e7}
+[data-theme="dark"]{--bg:#0d1612;--surface:#162019;--surface-2:#101813;--ink:#ecf0ed;--ink-soft:#9bb0a3;--rule:#26342c;--rule-strong:#ecf0ed;--accent:#5fcc9f;--accent-soft:#1a3329;--ok:#7fc99c;--ok-soft:#1f3327;--err:#f08585;--err-soft:#3d2222}
+[data-theme="dark"] button.primary, [data-theme="dark"] a.primary { color: var(--bg) !important; }
+[data-theme="dark"] button.primary, [data-theme="dark"] a.primary { border-color: var(--accent) !important; }
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.55;font-size:14px;min-height:100vh}
+.skip-link{position:absolute;left:-9999px;top:0;background:var(--accent);color:#fff;padding:.5rem 1rem;z-index:100;font-weight:600}
+.skip-link:focus{left:1rem;top:1rem}
+.layout{max-width:1200px;margin:0 auto;padding:2rem 1.25rem 4rem}
+header{display:grid;grid-template-columns:1fr auto;gap:1.5rem;align-items:end;padding-bottom:1.25rem;border-bottom:1px solid var(--rule-strong);margin-bottom:1.5rem}
+.brand{font-family:var(--mono);font-size:.6875rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:.5rem;font-weight:600}
+h1{font-size:clamp(1.625rem,4vw,2.375rem);font-weight:700;letter-spacing:-.02em;line-height:1.05}
+h1 .accent{color:var(--accent)}
+.subtitle{margin-top:.5rem;color:var(--ink-soft);font-size:.9375rem;max-width:560px}
+.theme-toggle{background:var(--surface);color:var(--ink);border:1px solid var(--rule-strong);border-radius:3px;padding:.5rem .75rem;font:inherit;font-size:.75rem;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:.4rem;flex-shrink:0}
+.theme-toggle:hover{background:var(--ink);color:var(--bg)}
+.theme-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.theme-toggle svg{width:14px;height:14px}
+.workspace{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:flex-start}
+@media(max-width:880px){.workspace{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:1rem 1.25rem}
+.panel-head{display:flex;align-items:baseline;gap:.625rem;margin-bottom:.625rem;padding-bottom:.4rem;border-bottom:1px solid var(--rule)}
+.panel-num{font-family:var(--mono);font-size:.6875rem;font-weight:700;color:var(--accent);letter-spacing:.08em}
+.panel-title{font-size:.8125rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+label{display:block;font-family:var(--mono);font-size:.6875rem;font-weight:700;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft)}
+textarea,input[type="text"],select{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--rule);border-radius:3px;padding:.55rem .7rem;font:inherit;font-family:var(--mono);font-size:.8125rem;line-height:1.5}
+textarea{resize:vertical;min-height:240px}
+textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.tabs{display:flex;border:1px solid var(--rule-strong);border-radius:3px;overflow:hidden;margin-bottom:.625rem}
+.tab{flex:1;background:var(--surface);color:var(--ink);border:none;border-right:1px solid var(--rule-strong);padding:.5rem .5rem;font:inherit;font-size:.6875rem;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.06em}
+.tab:last-child{border-right:none}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.625rem}
+.field{margin-bottom:.5rem}
+button.primary,button.secondary{font:inherit;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:.45rem .85rem;border-radius:3px;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem}
+button.primary{background:var(--accent);color:#fff;border:1px solid var(--accent)}
+button.primary:hover:not(:disabled){filter:brightness(.92)}
+button.secondary{background:var(--surface);color:var(--ink);border:1px solid var(--rule-strong)}
+button.secondary:hover:not(:disabled){background:var(--ink);color:var(--bg)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.625rem;font-size:.75rem}
+.options label{font-size:.6875rem;margin-bottom:.2rem}
+.help{margin-top:.4rem;font-size:.75rem;color:var(--ink-soft);line-height:1.55}
+footer{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid var(--rule);font-size:.75rem;color:var(--ink-soft);line-height:1.7}
+footer a{color:var(--ink-soft);text-decoration:underline;text-underline-offset:2px}
+footer a:hover{color:var(--accent)}
+.status{margin-top:.5rem;padding:.4rem .625rem;border-radius:3px;font-size:.75rem;font-family:var(--mono);border:1px solid var(--rule)}
+.status.ok{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.status.err{background:var(--err-soft);color:var(--err);border-color:var(--err)}
+@media(max-width:540px){.layout{padding:1.25rem 1rem 3rem}h1{font-size:1.375rem}header{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-theme="light">
+<a href="#main" class="skip-link">Skip to main</a>
+<div class="layout">
+<header>
+<div>
+<div class="brand">CSV // CONVERTER</div>
+<h1>CSV to <span class="accent">anything.</span></h1>
+<p class="subtitle">Paste CSV or TSV. Get JSON, SQL inserts, Markdown table, or TypeScript types. Browser-only.</p>
+</div>
+<button type="button" class="theme-toggle" id="theme-btn" aria-label="Toggle theme" aria-pressed="false">
+<svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+</svg>
+<span id="theme-label">Dark</span>
+</button>
+</header>
+<main id="main">
+<div class="workspace">
+<div class="panel">
+<div class="panel-head"><span class="panel-num">01</span><h2 class="panel-title">Input</h2></div>
+<div class="options">
+<div class="field"><label for="delim">Delimiter</label><select id="delim"><option value="auto">Auto</option><option value=",">Comma</option><option value="\t">Tab</option><option value=";">Semicolon</option><option value="|">Pipe</option></select></div>
+<div class="field"><label for="header-toggle">First row</label><select id="header-toggle"><option value="header">Header</option><option value="data">Data (no header)</option></select></div>
+</div>
+<label for="csv-input">CSV / TSV</label>
+<textarea id="csv-input" spellcheck="false" placeholder="name,age,active
+Alice,30,true
+Bob,25,false"></textarea>
+<div class="row"><button type="button" class="secondary" id="example-btn">Load example</button><button type="button" class="secondary" id="clear-btn">Clear</button></div>
+</div>
+<div class="panel">
+<div class="panel-head"><span class="panel-num">02</span><h2 class="panel-title">Output</h2></div>
+<div class="tabs" role="tablist">
+<button class="tab" data-format="json" role="tab" aria-selected="true">JSON</button>
+<button class="tab" data-format="sql" role="tab" aria-selected="false">SQL</button>
+<button class="tab" data-format="markdown" role="tab" aria-selected="false">Markdown</button>
+<button class="tab" data-format="typescript" role="tab" aria-selected="false">TypeScript</button>
+</div>
+<div id="sql-options" style="display:none;margin-bottom:.5rem">
+<div class="field"><label for="table-name">Table name</label><input type="text" id="table-name" value="my_table" autocomplete="off"></div>
+</div>
+<div id="ts-options" style="display:none;margin-bottom:.5rem">
+<div class="field"><label for="ts-name">Interface name</label><input type="text" id="ts-name" value="Row" autocomplete="off"></div>
+</div>
+<label for="output-area">Result</label>
+<textarea id="output-area" readonly spellcheck="false" style="min-height:280px"></textarea>
+<div class="row"><button type="button" class="primary" id="copy-btn">Copy</button><button type="button" class="secondary" id="download-btn">Download</button></div>
+<div id="status" role="status" aria-live="polite"></div>
+</div>
+</div>
+</main>
+<footer>
+<p>Source: <a href="https://github.com/0xelitesystem/csv-to-anything" target="_blank" rel="noopener">github.com/0xelitesystem/csv-to-anything</a></p>
+<p>Related: <a href="https://github.com/0xelitesystem/json-to-typescript" target="_blank" rel="noopener">json-to-typescript</a> &middot; <a href="https://github.com/0xelitesystem/regex-tester-with-explainer" target="_blank" rel="noopener">regex-tester-with-explainer</a> &middot; <a href="https://github.com/0xelitesystem/og-image-generator" target="_blank" rel="noopener">og-image-generator</a></p>
+<p>No data leaves your browser. SQL output uses parameterized values where safe; review before running on a live database.</p>
+</footer>
+</div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let currentFormat="json";
+
+const EXAMPLE=`name,age,active,joined
+Alice,30,true,2024-01-15
+Bob,25,false,2024-03-22
+Carol,42,true,2023-11-08
+Dave,,true,2024-07-01`;
+
+function detectDelim(text){
+  const sample=text.split("\n").slice(0,5).join("\n");
+  const counts={",":(sample.match(/,/g)||[]).length,"\t":(sample.match(/\t/g)||[]).length,";":(sample.match(/;/g)||[]).length,"|":(sample.match(/\|/g)||[]).length};
+  return Object.keys(counts).reduce((a,b)=>counts[a]>counts[b]?a:b);
+}
+
+// CSV parser handling quotes and escaped quotes
+function parseCSV(text,delim){
+  const rows=[];let row=[];let cur="";let inQuotes=false;let i=0;
+  while(i<text.length){
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'&&text[i+1]==='"'){cur+='"';i+=2;continue}
+      if(c==='"'){inQuotes=false;i++;continue}
+      cur+=c;i++;
+    }else{
+      if(c==='"'){inQuotes=true;i++;continue}
+      if(c===delim){row.push(cur);cur="";i++;continue}
+      if(c==='\r'){i++;continue}
+      if(c==='\n'){row.push(cur);rows.push(row);row=[];cur="";i++;continue}
+      cur+=c;i++;
+    }
+  }
+  if(cur!==""||row.length>0){row.push(cur);rows.push(row)}
+  return rows.filter(r=>!(r.length===1&&r[0]===""));
+}
+
+function inferType(values){
+  let allInt=true,allFloat=true,allBool=true,allDate=true,hasValue=false;
+  for(const v of values){
+    if(v==null||v===""){continue}
+    hasValue=true;
+    if(!/^-?\d+$/.test(v))allInt=false;
+    if(!/^-?\d*\.?\d+$/.test(v))allFloat=false;
+    if(!/^(true|false|TRUE|FALSE|yes|no|Y|N|0|1)$/.test(v))allBool=false;
+    if(!/^\d{4}-\d{2}-\d{2}/.test(v))allDate=false;
+  }
+  if(!hasValue)return"string";
+  if(allBool)return"boolean";
+  if(allInt)return"integer";
+  if(allFloat)return"number";
+  if(allDate)return"date";
+  return"string";
+}
+
+function coerce(v,type){
+  if(v===""||v==null)return null;
+  if(type==="integer")return parseInt(v,10);
+  if(type==="number")return parseFloat(v);
+  if(type==="boolean")return /^(true|TRUE|yes|Y|1)$/.test(v);
+  return v;
+}
+
+function toJSON(headers,rows,types){
+  const out=rows.map(row=>{
+    const obj={};
+    headers.forEach((h,i)=>{obj[h]=coerce(row[i],types[i])});
+    return obj;
+  });
+  return JSON.stringify(out,null,2);
+}
+
+function sqlEscape(v){
+  if(v==null)return"NULL";
+  if(typeof v==="number")return String(v);
+  if(typeof v==="boolean")return v?"TRUE":"FALSE";
+  return"'"+String(v).replace(/'/g,"''")+"'";
+}
+
+function toSQL(headers,rows,types,table){
+  const colList=headers.map(h=>'"'+h.replace(/"/g,'""')+'"').join(", ");
+  const lines=[`-- Generated INSERT statements for table "${table.replace(/"/g,'""')}"`,`-- Review and adjust types and constraints before running.`,""];
+  for(const row of rows){
+    const vals=headers.map((h,i)=>sqlEscape(coerce(row[i],types[i]))).join(", ");
+    lines.push(`INSERT INTO "${table.replace(/"/g,'""')}" (${colList}) VALUES (${vals});`);
+  }
+  return lines.join("\n");
+}
+
+function toMarkdown(headers,rows){
+  const mdEsc=s=>String(s||"").replace(/\|/g,"\\|");
+  const colWidths=headers.map((h,i)=>Math.max(mdEsc(h).length,...rows.map(r=>mdEsc(r[i]).length)));
+  const pad=(s,w)=>mdEsc(s).padEnd(w);
+  const headerRow="| "+headers.map((h,i)=>pad(h,colWidths[i])).join(" | ")+" |";
+  const sep="| "+colWidths.map(w=>"-".repeat(w)).join(" | ")+" |";
+  const dataRows=rows.map(r=>"| "+headers.map((_,i)=>pad(r[i],colWidths[i])).join(" | ")+" |");
+  return[headerRow,sep,...dataRows].join("\n");
+}
+
+function tsTypeFor(t){
+  return{integer:"number",number:"number",boolean:"boolean",date:"string",string:"string"}[t]||"string";
+}
+
+function toTypeScript(headers,types,name){
+  const safe=name.replace(/[^A-Za-z0-9_]/g,"_")||"Row";
+  const lines=[`export interface ${safe} {`];
+  headers.forEach((h,i)=>{
+    const propName=/^[A-Za-z_$][\w$]*$/.test(h)?h:`"${h.replace(/"/g,'\\"')}"`;
+    lines.push(`  ${propName}: ${tsTypeFor(types[i])} | null;`);
+  });
+  lines.push("}");
+  return lines.join("\n");
+}
+
+function convert(){
+  const text=$("csv-input").value;
+  const out=$("output-area");
+  if(!text.trim()){out.value="";setStatus("","");return}
+  let delim=$("delim").value;
+  if(delim==="\\t")delim="\t"; // the option value arrives as the literal 2-char string
+  if(delim==="auto")delim=detectDelim(text);
+  const rows=parseCSV(text,delim);
+  if(rows.length===0){out.value="";setStatus("err","No rows parsed");return}
+  const hasHeader=$("header-toggle").value==="header";
+  const headers=hasHeader?rows[0]:rows[0].map((_,i)=>"col"+(i+1));
+  const data=hasHeader?rows.slice(1):rows;
+  // Infer types per column
+  const types=headers.map((_,i)=>inferType(data.map(r=>r[i])));
+  let output="";
+  try{
+    if(currentFormat==="json")output=toJSON(headers,data,types);
+    else if(currentFormat==="sql")output=toSQL(headers,data,types,$("table-name").value||"my_table");
+    else if(currentFormat==="markdown")output=toMarkdown(headers,data);
+    else if(currentFormat==="typescript")output=toTypeScript(headers,types,$("ts-name").value||"Row");
+  }catch(e){
+    setStatus("err","Conversion error: "+e.message);return;
+  }
+  out.value=output;
+  setStatus("ok",`${data.length} row${data.length===1?"":"s"} converted`);
+}
+
+function setStatus(kind,msg){
+  if(!kind){$("status").innerHTML="";return}
+  $("status").innerHTML=`<div class="status ${escapeHtml(kind)}">${escapeHtml(msg)}</div>`;
+}
+
+document.querySelectorAll(".tab").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected","false"));
+    b.setAttribute("aria-selected","true");
+    currentFormat=b.dataset.format;
+    $("sql-options").style.display=currentFormat==="sql"?"block":"none";
+    $("ts-options").style.display=currentFormat==="typescript"?"block":"none";
+    convert();
+  });
+  b.addEventListener("keydown",e=>{
+    const tabs=[...document.querySelectorAll(".tab")];
+    const i=tabs.indexOf(b);
+    if(e.key==="ArrowRight"&&i<tabs.length-1){e.preventDefault();tabs[i+1].focus();tabs[i+1].click()}
+    if(e.key==="ArrowLeft"&&i>0){e.preventDefault();tabs[i-1].focus();tabs[i-1].click()}
+  });
+});
+
+["csv-input","delim","header-toggle","table-name","ts-name"].forEach(id=>{
+  $(id).addEventListener("input",convert);
+  $(id).addEventListener("change",convert);
+});
+
+$("example-btn").addEventListener("click",()=>{$("csv-input").value=EXAMPLE;convert()});
+$("clear-btn").addEventListener("click",()=>{$("csv-input").value="";$("output-area").value="";setStatus("","")});
+
+$("copy-btn").addEventListener("click",async()=>{
+  const v=$("output-area").value;
+  if(!v){setStatus("err","Nothing to copy");return}
+  try{await navigator.clipboard.writeText(v);setStatus("ok","Copied to clipboard")}
+  catch{setStatus("err","Clipboard blocked; select and copy manually")}
+});
+
+$("download-btn").addEventListener("click",()=>{
+  const v=$("output-area").value;
+  if(!v){setStatus("err","Nothing to download");return}
+  const ext={json:"json",sql:"sql",markdown:"md",typescript:"ts"}[currentFormat]||"txt";
+  const blob=new Blob([v],{type:"text/plain"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download="output."+ext;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},200);
+});
+
+function applyTheme(t){
+  document.body.dataset.theme=t;
+  $("theme-label").textContent=t==="dark"?"Light":"Dark";
+  $("theme-btn").setAttribute("aria-pressed",String(t==="dark"));
+  const icon=$("theme-icon");
+  if(t==="dark")icon.innerHTML='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+  else icon.innerHTML='<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>';
+}
+$("theme-btn").addEventListener("click",()=>applyTheme(document.body.dataset.theme==="dark"?"light":"dark"));
+if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)applyTheme("dark");
+
+$("csv-input").value=EXAMPLE;
+convert();
+</script>
+</body>
+</html>
