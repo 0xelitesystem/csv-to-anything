@@ -69,6 +69,10 @@ It does NOT handle:
 - Doesn't infer JSON Schema. Use `json-to-typescript` or a dedicated tool for that.
 - Doesn't streaming-process huge files. Targeted at human-scale CSVs (< 100k rows).
 
+## More
+
+Part of a catalog of single-file browser tools and plain-language references, all MIT licensed and dependency-free: [0xelitesystem.github.io](https://0xelitesystem.github.io/). Built by [elitesystem.ai](https://elitesystem.ai).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
