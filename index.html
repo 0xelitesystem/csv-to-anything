@@ -123,7 +123,7 @@ Bob,25,false"></textarea>
 <footer>
 <p>Source: <a href="https://github.com/0xelitesystem/csv-to-anything" target="_blank" rel="noopener">github.com/0xelitesystem/csv-to-anything</a></p>
 <p>Related: <a href="https://github.com/0xelitesystem/json-to-typescript" target="_blank" rel="noopener">json-to-typescript</a> &middot; <a href="https://github.com/0xelitesystem/regex-tester-with-explainer" target="_blank" rel="noopener">regex-tester-with-explainer</a> &middot; <a href="https://github.com/0xelitesystem/og-image-generator" target="_blank" rel="noopener">og-image-generator</a></p>
-<p>No data leaves your browser. SQL output uses parameterized values where safe; review before running on a live database.</p>
+<p>No data leaves your browser. SQL output is not parameterized: values are inlined as literals with single quotes doubled and identifiers double-quoted. Review before running on a live database.</p>
 </footer>
 </div>
 <script>
@@ -165,13 +165,24 @@ function parseCSV(text,delim){
   return rows.filter(r=>!(r.length===1&&r[0]===""));
 }
 
+// A digit string is only safe to turn into a JS number when the number renders
+// back to the exact same text. Blocks "01234" -> 1234 and ids past 2^53.
+function losslessNumber(v){
+  if(/^-?0\d/.test(v))return false;
+  if(/^-?\d+$/.test(v))return String(Number(v))===v;
+  return true;
+}
+
 function inferType(values){
   let allInt=true,allFloat=true,allBool=true,allDate=true,hasValue=false;
   for(const v of values){
     if(v==null||v===""){continue}
     hasValue=true;
-    if(!/^-?\d+$/.test(v))allInt=false;
-    if(!/^-?\d*\.?\d+$/.test(v))allFloat=false;
+    const numOk=losslessNumber(v);
+    if(!numOk||!/^-?\d+$/.test(v))allInt=false;
+    // Same language as /^-?\d*\.?\d+$/ but without the ambiguous \d*\.?\d+ overlap,
+    // which backtracked quadratically on a long non-matching digit run.
+    if(!numOk||!/^-?(?:\d+(?:\.\d+)?|\.\d+)$/.test(v))allFloat=false;
     if(!/^(true|false|TRUE|FALSE|yes|no|Y|N|0|1)$/.test(v))allBool=false;
     if(!/^\d{4}-\d{2}-\d{2}/.test(v))allDate=false;
   }
@@ -193,7 +204,9 @@ function coerce(v,type){
 
 function toJSON(headers,rows,types){
   const out=rows.map(row=>{
-    const obj={};
+    // Object.create(null): a header literally named __proto__ must become a real
+    // key, not a silently ignored prototype assignment.
+    const obj=Object.create(null);
     headers.forEach((h,i)=>{obj[h]=coerce(row[i],types[i])});
     return obj;
   });
@@ -218,7 +231,9 @@ function toSQL(headers,rows,types,table){
 }
 
 function toMarkdown(headers,rows){
-  const mdEsc=s=>String(s||"").replace(/\|/g,"\\|");
+  // A raw newline inside a cell would split the row and break the table, so it
+  // becomes <br>, the only line break a Markdown table cell can carry.
+  const mdEsc=s=>String(s||"").replace(/\|/g,"\\|").replace(/\r\n|[\r\n]/g,"<br>");
   const colWidths=headers.map((h,i)=>Math.max(mdEsc(h).length,...rows.map(r=>mdEsc(r[i]).length)));
   const pad=(s,w)=>mdEsc(s).padEnd(w);
   const headerRow="| "+headers.map((h,i)=>pad(h,colWidths[i])).join(" | ")+" |";
@@ -232,10 +247,13 @@ function tsTypeFor(t){
 }
 
 function toTypeScript(headers,types,name){
-  const safe=name.replace(/[^A-Za-z0-9_]/g,"_")||"Row";
+  let safe=name.replace(/[^A-Za-z0-9_]/g,"_")||"Row";
+  if(/^\d/.test(safe))safe="_"+safe; // an interface name cannot start with a digit
   const lines=[`export interface ${safe} {`];
   headers.forEach((h,i)=>{
-    const propName=/^[A-Za-z_$][\w$]*$/.test(h)?h:`"${h.replace(/"/g,'\\"')}"`;
+    // JSON.stringify escapes backslashes, quotes and control characters, so a
+    // header like a\ or one holding a newline still yields a valid TS literal.
+    const propName=/^[A-Za-z_$][\w$]*$/.test(h)?h:JSON.stringify(String(h));
     lines.push(`  ${propName}: ${tsTypeFor(types[i])} | null;`);
   });
   lines.push("}");

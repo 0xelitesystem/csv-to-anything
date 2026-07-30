@@ -22,10 +22,12 @@ Open `index.html` in any browser, or visit the hosted demo at `https://0xelitesy
 Type inference runs per column based on the data. Recognized types:
 
 - `integer` (matches `/^-?\d+$/`)
-- `number` (matches `/^-?\d*\.?\d+$/`)
-- `boolean` (`true`, `false`, `yes`, `no`, `Y`, `N`, `0`, `1`, case insensitive)
+- `number` (matches `/^-?(?:\d+(?:\.\d+)?|\.\d+)$/`)
+- `boolean` (exactly `true`, `false`, `TRUE`, `FALSE`, `yes`, `no`, `Y`, `N`, `0`, `1`; the match is case sensitive, so `True` and `YES` stay strings)
 - `date` (anything starting with `YYYY-MM-DD`)
 - `string` (everything else)
+
+A digit string only counts as `integer` or `number` if the JS number renders back to the same text. That keeps `01234` and `12345678901234567890` as strings instead of turning them into `1234` and a rounded id.
 
 Empty cells become `null` in JSON, `NULL` in SQL, blank in Markdown, and `null` is included as a permitted value in TypeScript types.
 
@@ -35,9 +37,9 @@ Empty cells become `null` in JSON, `NULL` in SQL, blank in Markdown, and `null` 
 
 **SQL**: `INSERT INTO "<table>" (...) VALUES (...);` per row. Identifiers double-quoted, strings single-quoted with `''` escape. Booleans become `TRUE`/`FALSE`. The output includes a header comment reminding you to review before running on a live database.
 
-**Markdown**: padded table with `|` separators and a `-` rule row. Column widths auto-compute from header and data.
+**Markdown**: padded table with `|` separators and a `-` rule row. Column widths auto-compute from header and data. A `|` inside a cell is backslash-escaped and a newline inside a cell becomes `<br>`, so one CSV row always stays one table row.
 
-**TypeScript**: `export interface ${name} { col: type | null; }`. Property names are quoted only if they're not valid identifiers.
+**TypeScript**: `export interface ${name} { col: type | null; }`. Property names are quoted only if they're not valid identifiers, and quoted names are escaped as JS string literals.
 
 ## CSV parsing
 
@@ -56,7 +58,7 @@ It does NOT handle:
 
 ## Tech
 
-- Single HTML file, ~600 lines
+- Single HTML file, ~390 lines
 - Vanilla JS, no frameworks, no dependencies, no build
 - Light and dark themes with OS preference detection
 - WCAG AA contrast on both themes
