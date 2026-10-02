@@ -4,11 +4,13 @@ Convert CSV or TSV input to JSON, SQL inserts, Markdown table, or TypeScript typ
 
 **Live demo:** https://0xelitesystem.github.io/csv-to-anything/
 
-## Why
+## Why this exists
 
 You hit this loop constantly: get a CSV from someone, need it as JSON for an API, or as SQL inserts for a database, or as a Markdown table for a doc, or as TypeScript types for a typed codebase. Most tools do exactly one of these. This does all four, instantly, in one file.
 
-## Use it
+It is a single HTML file with no tracking and no network calls, and it is MIT licensed.
+
+## Use
 
 Open `index.html` in any browser, or visit the hosted demo at `https://0xelitesystem.github.io/csv-to-anything/` once Pages is enabled.
 
@@ -70,6 +72,23 @@ It does NOT handle:
 - Doesn't validate SQL against your actual schema. The output is a starting point.
 - Doesn't infer JSON Schema. Use `json-to-typescript` or a dedicated tool for that.
 - Doesn't streaming-process huge files. Targeted at human-scale CSVs (< 100k rows).
+
+## Privacy
+
+Everything runs in your browser. The page makes no network requests, loads no external scripts or fonts, and has no analytics or tracking. The CSV you paste never leaves your machine. The one thing the page saves is your light or dark theme choice, written to `localStorage` under the key `theme` when you press the theme toggle. Clearing site data removes it.
+
+## Run locally
+
+```
+git clone https://github.com/0xelitesystem/csv-to-anything
+cd csv-to-anything
+```
+
+Then open `index.html` in any modern browser, or serve the folder with `python -m http.server` and visit http://localhost:8000/.
+
+## Build
+
+No build step. The whole tool is one `index.html` file with inline CSS and JavaScript, and there is nothing to install or compile.
 
 ## More
 
