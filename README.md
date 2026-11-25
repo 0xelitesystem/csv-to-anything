@@ -100,7 +100,7 @@ MIT. See [LICENSE](LICENSE).
 
 ## Related
 
-- [json-to-typescript](https://github.com/0xelitesystem/json-to-typescript), the inverse direction, JSON to TS
+- [json-value-to-ts-interfaces](https://github.com/0xelitesystem/json-value-to-ts-interfaces), the inverse direction, JSON to TS
 - [regex-tester-with-explainer](https://github.com/0xelitesystem/regex-tester-with-explainer), test regex patterns
 - [og-image-generator](https://github.com/0xelitesystem/og-image-generator), generate Open Graph cards
 - [single-file-saas-template](https://github.com/0xelitesystem/single-file-saas-template), ship a SaaS in one HTML file
